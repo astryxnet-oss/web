@@ -30,6 +30,11 @@ export default function Category() {
   const filteredCodes = useMemo(() => {
     let result = codes.filter((code) => code.category === id);
 
+    // Show no advertisements for advertising categories
+    if (isAdvertising) {
+      return [];
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -76,7 +81,7 @@ export default function Category() {
     }
 
     return result;
-  }, [codes, id, searchQuery, selectedStatus, sortBy]);
+  }, [codes, id, searchQuery, selectedStatus, sortBy, isAdvertising]);
 
   if (!categoryInfo) {
     return (
