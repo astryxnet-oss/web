@@ -19,6 +19,7 @@ export default function Category() {
   const [sortBy, setSortBy] = useState("recent");
 
   const categoryInfo = categories.find((c) => c.id === id);
+  const isAdvertising = categoryInfo?.type === "advertising";
 
   const { data: codesData, isLoading } = useQuery<{ codes: Code[]; counts: Record<string, number> }>({
     queryKey: ["/api/codes"],
@@ -107,11 +108,13 @@ export default function Category() {
             <Link href="/">
               <Button variant="ghost" size="sm" className="mb-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                Back
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold mb-2">{categoryInfo.name} Codes</h1>
-            <p className="text-muted-foreground">{categoryInfo.description}</p>
+            <h1 className="text-3xl font-bold mb-2">{categoryInfo.name}</h1>
+            <p className="text-muted-foreground">
+              {categoryInfo.description}
+            </p>
           </div>
 
           <div className="mb-6">
@@ -129,14 +132,15 @@ export default function Category() {
 
           <div className="mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredCodes.length} {filteredCodes.length === 1 ? "code" : "codes"}
+              Showing {filteredCodes.length} {filteredCodes.length === 1 ? isAdvertising ? "listing" : "code" : isAdvertising ? "listings" : "codes"}
             </p>
           </div>
 
           <CodeGrid 
             codes={filteredCodes} 
             isLoading={isLoading}
-            emptyMessage={`No ${categoryInfo.name} codes yet. Be the first to submit one!`}
+            isAdvertising={isAdvertising}
+            emptyMessage={`No ${categoryInfo.name} yet. Be the first to submit one!`}
           />
         </div>
       </main>

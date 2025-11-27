@@ -108,6 +108,51 @@ export async function registerRoutes(
     }
   });
 
+  // Owner-only tag management (single owner ID hardcoded for security)
+  const OWNER_ID = process.env.REPLIT_OWNER_ID || "50304760"; // Replace with actual owner ID
+  
+  const isOwner = (userId: string) => userId === OWNER_ID;
+  
+  app.post("/api/admin/users/:userId/tags", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      if (!isOwner(currentUserId)) {
+        return res.status(403).json({ message: "Forbidden: Only owner can manage tags" });
+      }
+      
+      const { userId } = req.params;
+      const { tags } = req.body;
+      
+      if (!Array.isArray(tags)) {
+        return res.status(400).json({ error: "Tags must be an array" });
+      }
+      
+      // Update user with custom tags - you'll need to implement this in storage
+      const db = require("./db");
+      const result = await db.update(db.schema.users)
+        .set({ customTags: JSON.stringify(tags) })
+        .where(db.schema.users.id.equals(userId));
+      
+      res.json({ success: true, tags });
+    } catch (error) {
+      console.error("Error updating tags:", error);
+      res.status(500).json({ error: "Failed to update tags" });
+    }
+  });
+
+  app.get("/api/users/:userId/profile", async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Failed to fetch user profile" });
+    }
+  });
+
   // User profile routes (protected)
   app.get("/api/user/codes", isAuthenticated, async (req: any, res) => {
     try {
