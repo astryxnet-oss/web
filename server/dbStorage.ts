@@ -1,4 +1,4 @@
-import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, codes, users, favorites, ratings, reports, categories } from "@shared/schema";
+import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, codes, users, favorites, ratings, reports, advertisements, categories } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, and, sum } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -55,6 +55,15 @@ export class DatabaseStorage implements IStorage {
     }
     const isValid = await bcrypt.compare(password, user.passwordHash);
     return isValid ? user : undefined;
+  }
+
+  async updateUserTags(userId: string, tags: string[]): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ tags, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
   }
 
   // Code operations
@@ -330,6 +339,73 @@ export class DatabaseStorage implements IStorage {
       .groupBy(codes.category);
 
     return results;
+  }
+
+  // Advertisement operations
+  async getAllAdvertisements(): Promise<Advertisement[]> {
+    return await db.select().from(advertisements).orderBy(desc(advertisements.createdAt));
+  }
+
+  async getApprovedAdvertisements(): Promise<Advertisement[]> {
+    return await db
+      .select()
+      .from(advertisements)
+      .where(eq(advertisements.status, "approved"))
+      .orderBy(desc(advertisements.createdAt));
+  }
+
+  async getAdvertisementsByCategory(category: string): Promise<Advertisement[]> {
+    return await db
+      .select()
+      .from(advertisements)
+      .where(and(eq(advertisements.category, category), eq(advertisements.status, "approved")))
+      .orderBy(desc(advertisements.createdAt));
+  }
+
+  async getAdvertisementById(id: string): Promise<Advertisement | undefined> {
+    const result = await db.select().from(advertisements).where(eq(advertisements.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAdvertisement(insertAd: InsertAdvertisement): Promise<Advertisement> {
+    const id = randomUUID();
+    const ad: Advertisement = {
+      ...insertAd,
+      id,
+      viewCount: 0,
+      createdAt: new Date(),
+    };
+    await db.insert(advertisements).values(ad);
+    return ad;
+  }
+
+  async updateAdvertisement(id: string, updates: Partial<Advertisement>): Promise<Advertisement | undefined> {
+    const result = await db
+      .update(advertisements)
+      .set(updates)
+      .where(eq(advertisements.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAdvertisement(id: string): Promise<boolean> {
+    const result = await db.delete(advertisements).where(eq(advertisements.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async incrementViewCount(id: string): Promise<void> {
+    await db
+      .update(advertisements)
+      .set({ viewCount: sql`${advertisements.viewCount} + 1` })
+      .where(eq(advertisements.id, id));
+  }
+
+  async getAdvertisementsByUser(userId: string): Promise<Advertisement[]> {
+    return await db
+      .select()
+      .from(advertisements)
+      .where(eq(advertisements.submitterId, userId))
+      .orderBy(desc(advertisements.createdAt));
   }
 
   async seedInitialData(): Promise<void> {

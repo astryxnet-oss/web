@@ -7,10 +7,28 @@ export const categories = [
   { id: "discord", name: "Discord", icon: "MessageCircle", description: "Free Discord codes & giveaways", type: "codes" },
   { id: "minecraft", name: "Minecraft", icon: "Gamepad2", description: "Free Minecraft codes & keys", type: "codes" },
   { id: "websites", name: "Websites", icon: "Globe", description: "Free website codes & access", type: "codes" },
+  { id: "gaming", name: "Gaming", icon: "Gamepad", description: "Free gaming codes & keys", type: "codes" },
+  { id: "streaming", name: "Streaming", icon: "Play", description: "Free streaming service codes", type: "codes" },
+  { id: "software", name: "Software", icon: "Code", description: "Free software licenses", type: "codes" },
+  { id: "crypto", name: "Crypto", icon: "Coins", description: "Free crypto & web3 codes", type: "codes" },
+  { id: "education", name: "Education", icon: "GraduationCap", description: "Free educational access codes", type: "codes" },
+  { id: "shopping", name: "Shopping", icon: "ShoppingBag", description: "Free shopping & discount codes", type: "codes" },
+  { id: "tools", name: "Tools", icon: "Wrench", description: "Free tool & utility codes", type: "codes" },
   { id: "discord-bots", name: "Discord Bots", icon: "Bot", description: "Advertise your Discord bots", type: "advertising" },
   { id: "discord-servers", name: "Discord Servers", icon: "Server", description: "Advertise your Discord servers", type: "advertising" },
   { id: "minecraft-addons", name: "Minecraft Addons", icon: "Puzzle", description: "Advertise mods, plugins & resource packs", type: "advertising" },
 ] as const;
+
+export const userTags = [
+  { id: "admin", name: "Admin", color: "red" },
+  { id: "moderator", name: "Mod", color: "blue" },
+  { id: "verified", name: "Verified", color: "green" },
+  { id: "contributor", name: "Contributor", color: "purple" },
+  { id: "premium", name: "Premium", color: "yellow" },
+  { id: "early-supporter", name: "Early Supporter", color: "pink" },
+] as const;
+
+export type UserTagId = typeof userTags[number]["id"];
 
 export type CategoryId = typeof categories[number]["id"];
 
@@ -34,12 +52,54 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash"), // For manual signup, null if using OAuth
   isAdmin: boolean("is_admin").default(false),
+  tags: text("tags").array().default([]), // User tags like admin, verified, contributor
+  bio: text("bio"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Advertisements table for listings (Discord bots, servers, Minecraft addons)
+export const advertisements = pgTable("advertisements", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).notNull(),
+  inviteLink: text("invite_link"), // Discord invite, download link, etc.
+  imageUrl: text("image_url"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  isVerified: boolean("is_verified").default(false),
+  viewCount: integer("view_count").default(0),
+  submitterId: varchar("submitter_id", { length: 36 }),
+  submitterName: text("submitter_name"),
+  submitterEmail: text("submitter_email"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
+  id: true,
+  viewCount: true,
+  createdAt: true,
+});
+
+export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
+export type Advertisement = typeof advertisements.$inferSelect;
+
+const advertisingCategoryIds = categories.filter(c => c.type === "advertising").map(c => c.id) as [string, ...string[]];
+
+export const submitAdvertisementSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title is too long"),
+  description: z.string().max(1000, "Description is too long").optional().or(z.literal("")),
+  category: z.enum(advertisingCategoryIds, { errorMap: () => ({ message: "Please select a category" }) }),
+  inviteLink: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  imageUrl: z.string().url("Please enter a valid image URL").optional().or(z.literal("")),
+  submitterName: z.string().max(50, "Name is too long").optional().or(z.literal("")),
+  submitterEmail: z.string().email("Invalid email").optional().or(z.literal("")),
+});
+
+export type SubmitAdvertisement = z.infer<typeof submitAdvertisementSchema>;
 
 export const codes = pgTable("codes", {
   id: varchar("id", { length: 36 }).primaryKey(),

@@ -17,6 +17,14 @@ Preferred communication style: Simple, everyday language.
 - Restricted admin page access to users with admin privileges only
 - Enhanced code cards with advanced view UI including detail modal
 - Updated submit modal with new resource types
+- **November 2025: Major feature update**
+  - Separated login and signup into dedicated pages (/login and /signup)
+  - Added advertisements/listings system with full CRUD operations
+  - Created advanced submit page with dual submission types (codes vs listings)
+  - Implemented user tags system for profile badges (admin, verified, contributor, etc.)
+  - Extended admin dashboard to manage both codes and advertisements
+  - Added user profile viewing page (/user/:id)
+  - Added "No codes found" and "No listings found" empty states throughout the app
 
 ## System Architecture
 
@@ -55,10 +63,14 @@ Preferred communication style: Simple, everyday language.
 - Home: Hero section, category grid, latest codes
 - Browse: All approved codes with search and filtering
 - Category: Codes filtered by category
+- Login: Dedicated login page with Google OAuth and email/password options
+- Signup: Dedicated signup page with email/password registration
+- Submit: Advanced submission page with code/advertisement type selection
 - Profile: User's submitted codes and stats
+- User Profile: View other users' profiles with their tags
 - Favorites: User's saved codes
 - Settings: Account settings with profile, notifications, appearance
-- Admin: Code moderation dashboard (admin-only)
+- Admin: Code and advertisement moderation dashboard (admin-only)
 
 ### Backend Architecture
 
@@ -79,8 +91,14 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/codes/category/:category` - Fetch codes filtered by category
 - `POST /api/codes/submit` - Submit new code for moderation
 - `POST /api/codes/:id/copy` - Increment copy counter
+- `GET /api/advertisements` - Fetch all approved advertisements
+- `GET /api/advertisements/:id` - Fetch single advertisement by ID
+- `POST /api/advertisements/submit` - Submit new listing for moderation
+- `POST /api/advertisements/:id/view` - Increment view counter
 - Admin endpoints: approve, reject, verify, delete codes (under `/api/admin/codes`)
-- User endpoints: favorites, user codes (under `/api/user/`)
+- Admin endpoints: approve, reject, verify, delete ads (under `/api/admin/advertisements`)
+- Admin endpoints: update user tags (under `/api/admin/users/:id/tags`)
+- User endpoints: favorites, user codes, user advertisements (under `/api/user/`)
 
 **Data Validation**
 - Zod schema validation for all incoming data
@@ -96,12 +114,14 @@ Preferred communication style: Simple, everyday language.
 
 **Schema Design**
 - `codes` table with fields: id, title, code, description, category, status, isVerified, copyCount, submitterId, submitterName, submitterEmail, createdAt
-- `users` table with fields: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
+- `users` table with fields: id, email, firstName, lastName, profileImageUrl, bio, isAdmin, tags (array), createdAt, updatedAt
+- `advertisements` table with fields: id, title, description, category, inviteLink, imageUrl, status, isVerified, viewCount, submitterId, submitterName, submitterEmail, createdAt
 - `favorites` table for user saved codes
 - `ratings` table for code upvotes/downvotes
 - `reports` table for flagging problematic codes
+- User tags: admin, moderator, verified, vip, contributor, developer (with color coding)
 - Status values: "pending", "approved", "rejected"
-- Category validation against predefined category list (13 categories)
+- Category validation against predefined category list (13 categories for codes, separate advertising categories)
 - UUID-based primary keys for distributed scalability
 
 **Categories**

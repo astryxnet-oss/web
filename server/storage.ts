@@ -1,10 +1,14 @@
-import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, categories } from "@shared/schema";
+import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, categories } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   // User operations for Replit Auth
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUserWithPassword(firstName: string, lastName: string, email: string, password: string): Promise<User>;
+  verifyPassword(email: string, password: string): Promise<User | undefined>;
+  updateUserTags(userId: string, tags: string[]): Promise<User | undefined>;
   
   // Code operations
   getAllCodes(): Promise<Code[]>;
@@ -17,6 +21,17 @@ export interface IStorage {
   incrementCopyCount(id: string): Promise<void>;
   getCategoryCounts(): Promise<Record<string, number>>;
   getCodesByUser(userId: string): Promise<Code[]>;
+  
+  // Advertisement operations
+  getAllAdvertisements(): Promise<Advertisement[]>;
+  getApprovedAdvertisements(): Promise<Advertisement[]>;
+  getAdvertisementsByCategory(category: string): Promise<Advertisement[]>;
+  getAdvertisementById(id: string): Promise<Advertisement | undefined>;
+  createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement>;
+  updateAdvertisement(id: string, updates: Partial<Advertisement>): Promise<Advertisement | undefined>;
+  deleteAdvertisement(id: string): Promise<boolean>;
+  incrementViewCount(id: string): Promise<void>;
+  getAdvertisementsByUser(userId: string): Promise<Advertisement[]>;
   
   // Favorites operations
   getFavoritesByUser(userId: string): Promise<Favorite[]>;

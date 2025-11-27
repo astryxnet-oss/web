@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { submitCodeSchema } from "@shared/schema";
+import { submitCodeSchema, submitAdvertisementSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 
@@ -105,6 +105,79 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error incrementing copy count:", error);
       res.status(500).json({ error: "Failed to update copy count" });
+    }
+  });
+
+  // Advertisement routes
+  app.get("/api/advertisements", async (req, res) => {
+    try {
+      const ads = await storage.getApprovedAdvertisements();
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching advertisements:", error);
+      res.status(500).json({ error: "Failed to fetch advertisements" });
+    }
+  });
+
+  app.get("/api/advertisements/:id", async (req, res) => {
+    try {
+      const ad = await storage.getAdvertisementById(req.params.id);
+      if (!ad || ad.status !== "approved") {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching advertisement:", error);
+      res.status(500).json({ error: "Failed to fetch advertisement" });
+    }
+  });
+
+  app.get("/api/advertisements/category/:category", async (req, res) => {
+    try {
+      const ads = await storage.getAdvertisementsByCategory(req.params.category);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching advertisements by category:", error);
+      res.status(500).json({ error: "Failed to fetch advertisements" });
+    }
+  });
+
+  app.post("/api/advertisements/submit", async (req: any, res) => {
+    try {
+      const validatedData = submitAdvertisementSchema.parse(req.body);
+      
+      const userId = req.user?.claims?.sub || null;
+      
+      const ad = await storage.createAdvertisement({
+        title: validatedData.title,
+        description: validatedData.description || null,
+        category: validatedData.category,
+        inviteLink: validatedData.inviteLink || null,
+        imageUrl: validatedData.imageUrl || null,
+        status: "pending",
+        isVerified: false,
+        submitterId: userId,
+        submitterName: validatedData.submitterName || null,
+        submitterEmail: validatedData.submitterEmail || null,
+      });
+      
+      res.status(201).json(ad);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid submission data", details: error.errors });
+      }
+      console.error("Error submitting advertisement:", error);
+      res.status(500).json({ error: "Failed to submit advertisement" });
+    }
+  });
+
+  app.post("/api/advertisements/:id/view", async (req, res) => {
+    try {
+      await storage.incrementViewCount(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+      res.status(500).json({ error: "Failed to update view count" });
     }
   });
 
@@ -421,6 +494,100 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating report:", error);
       res.status(500).json({ error: "Failed to update report" });
+    }
+  });
+
+  // Admin advertisement routes
+  app.get("/api/admin/advertisements", isAdmin, async (req: any, res) => {
+    try {
+      const ads = await storage.getAllAdvertisements();
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching all advertisements:", error);
+      res.status(500).json({ error: "Failed to fetch advertisements" });
+    }
+  });
+
+  app.post("/api/admin/advertisements/:id/approve", isAdmin, async (req: any, res) => {
+    try {
+      const ad = await storage.updateAdvertisement(req.params.id, { status: "approved" });
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error approving advertisement:", error);
+      res.status(500).json({ error: "Failed to approve advertisement" });
+    }
+  });
+
+  app.post("/api/admin/advertisements/:id/reject", isAdmin, async (req: any, res) => {
+    try {
+      const ad = await storage.updateAdvertisement(req.params.id, { status: "rejected" });
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error rejecting advertisement:", error);
+      res.status(500).json({ error: "Failed to reject advertisement" });
+    }
+  });
+
+  app.post("/api/admin/advertisements/:id/verify", isAdmin, async (req: any, res) => {
+    try {
+      const ad = await storage.updateAdvertisement(req.params.id, { isVerified: true });
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error verifying advertisement:", error);
+      res.status(500).json({ error: "Failed to verify advertisement" });
+    }
+  });
+
+  app.delete("/api/admin/advertisements/:id", isAdmin, async (req: any, res) => {
+    try {
+      const success = await storage.deleteAdvertisement(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting advertisement:", error);
+      res.status(500).json({ error: "Failed to delete advertisement" });
+    }
+  });
+
+  // User tag management (admin only)
+  app.post("/api/admin/users/:id/tags", isAdmin, async (req: any, res) => {
+    try {
+      const { tags } = req.body;
+      if (!Array.isArray(tags)) {
+        return res.status(400).json({ error: "Tags must be an array" });
+      }
+      
+      const user = await storage.updateUserTags(req.params.id, tags);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user tags:", error);
+      res.status(500).json({ error: "Failed to update user tags" });
+    }
+  });
+
+  // User advertisements endpoint
+  app.get("/api/user/advertisements", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const ads = await storage.getAdvertisementsByUser(userId);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching user advertisements:", error);
+      res.status(500).json({ error: "Failed to fetch user advertisements" });
     }
   });
 

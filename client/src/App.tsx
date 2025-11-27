@@ -9,7 +9,10 @@ import Browse from "@/pages/browse";
 import Category from "@/pages/category";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
+import Signup from "@/pages/signup";
+import Submit from "@/pages/submit";
 import Profile from "@/pages/profile";
+import UserProfile from "@/pages/user-profile";
 import Favorites from "@/pages/favorites";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
@@ -20,9 +23,12 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/browse" component={Browse} />
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/submit" component={Submit} />
       <Route path="/category/:id" component={Category} />
       <Route path="/admin" component={Admin} />
       <Route path="/profile" component={Profile} />
+      <Route path="/user/:id" component={UserProfile} />
       <Route path="/favorites" component={Favorites} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
