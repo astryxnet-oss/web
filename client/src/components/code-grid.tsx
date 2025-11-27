@@ -8,9 +8,10 @@ interface CodeGridProps {
   isLoading?: boolean;
   onCopy?: (codeId: string) => void;
   emptyMessage?: string;
+  showStatus?: boolean;
 }
 
-export function CodeGrid({ codes, isLoading, onCopy, emptyMessage }: CodeGridProps) {
+export function CodeGrid({ codes, isLoading, onCopy, emptyMessage, showStatus }: CodeGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -51,7 +52,7 @@ export function CodeGrid({ codes, isLoading, onCopy, emptyMessage }: CodeGridPro
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {codes.map((code) => (
-        <CodeCard key={code.id} code={code} onCopy={onCopy} />
+        <CodeCard key={code.id} code={code} onCopy={onCopy} showStatus={showStatus} />
       ))}
     </div>
   );

@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Code2, Plus, Shield, Search } from "lucide-react";
+import { Menu, X, Code2, Plus, Shield, Search, User, LogOut, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavigationProps {
   onSubmitClick: () => void;
@@ -15,6 +24,7 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
   const [isOpen, setIsOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [location, navigate] = useLocation();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +35,14 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
     }
   };
 
+  const handleLogin = () => {
+    window.location.href = "/api/login";
+  };
+
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
+
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/browse", label: "Browse" },
@@ -32,6 +50,17 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
     { href: "/category/minecraft", label: "Minecraft" },
     { href: "/category/gaming", label: "Gaming" },
   ];
+
+  const getUserInitials = () => {
+    if (!user) return "?";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    if (user.email) {
+      return user.email[0].toUpperCase();
+    }
+    return "U";
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -75,12 +104,55 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/admin">
-              <Button variant="ghost" size="icon" data-testid="link-admin" title="Admin Dashboard">
-                <Shield className="h-5 w-5" />
-                <span className="sr-only">Admin</span>
+            
+            {isLoading ? (
+              <div className="w-9 h-9 rounded-full bg-muted animate-pulse" />
+            ) : isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-user-menu">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} />
+                      <AvatarFallback className="text-xs">{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-sm font-medium">
+                    {user.firstName || user.email || "User"}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/favorites" className="flex items-center gap-2 cursor-pointer">
+                      <Heart className="h-4 w-4" />
+                      Favorites
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
+                      <Shield className="h-4 w-4" />
+                      Admin
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin} data-testid="button-login">
+                Login
               </Button>
-            </Link>
+            )}
+
             <Button
               onClick={onSubmitClick}
               className="hidden sm:flex"
@@ -128,6 +200,22 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
                 </Button>
               </Link>
             ))}
+            {isAuthenticated && (
+              <>
+                <Link href="/profile">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => setIsOpen(false)}>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link href="/favorites">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => setIsOpen(false)}>
+                    <Heart className="h-4 w-4 mr-2" />
+                    Favorites
+                  </Button>
+                </Link>
+              </>
+            )}
             <Button
               onClick={() => {
                 onSubmitClick();
@@ -139,6 +227,11 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
               <Plus className="h-4 w-4 mr-2" />
               Submit Code
             </Button>
+            {!isAuthenticated && (
+              <Button variant="outline" className="w-full" onClick={handleLogin}>
+                Login
+              </Button>
+            )}
           </div>
         )}
       </div>

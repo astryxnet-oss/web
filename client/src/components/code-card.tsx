@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, BadgeCheck, Flame, Clock } from "lucide-react";
+import { Check, Copy, BadgeCheck, Flame, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { apiRequest } from "@/lib/queryClient";
 interface CodeCardProps {
   code: Code;
   onCopy?: (codeId: string) => void;
+  showStatus?: boolean;
 }
 
-export function CodeCard({ code, onCopy }: CodeCardProps) {
+export function CodeCard({ code, onCopy, showStatus }: CodeCardProps) {
   const [copied, setCopied] = useState(false);
   const [localCopyCount, setLocalCopyCount] = useState(code.copyCount || 0);
 
@@ -59,6 +60,24 @@ export function CodeCard({ code, onCopy }: CodeCardProps) {
             <Badge variant="outline" className="text-xs gap-1 border-chart-4 text-chart-4">
               <Flame className="h-3 w-3" />
               Popular
+            </Badge>
+          )}
+          {showStatus && code.status === "pending" && (
+            <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-500">
+              <Loader className="h-3 w-3" />
+              Pending
+            </Badge>
+          )}
+          {showStatus && code.status === "approved" && (
+            <Badge variant="outline" className="text-xs gap-1 border-green-500 text-green-500">
+              <CheckCircle className="h-3 w-3" />
+              Approved
+            </Badge>
+          )}
+          {showStatus && code.status === "rejected" && (
+            <Badge variant="outline" className="text-xs gap-1 border-red-500 text-red-500">
+              <XCircle className="h-3 w-3" />
+              Rejected
             </Badge>
           )}
         </div>

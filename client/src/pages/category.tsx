@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { Navigation } from "@/components/navigation";
@@ -9,9 +9,7 @@ import { CodeGrid } from "@/components/code-grid";
 import { SubmitModal } from "@/components/submit-modal";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { categories, type Code, type SubmitCode } from "@shared/schema";
+import { categories, type Code } from "@shared/schema";
 
 export default function Category() {
   const { id } = useParams<{ id: string }>();
@@ -19,33 +17,11 @@ export default function Category() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
-  const { toast } = useToast();
 
   const categoryInfo = categories.find((c) => c.id === id);
 
   const { data: codesData, isLoading } = useQuery<{ codes: Code[]; counts: Record<string, number> }>({
     queryKey: ["/api/codes"],
-  });
-
-  const submitMutation = useMutation({
-    mutationFn: async (data: SubmitCode) => {
-      return apiRequest("POST", "/api/codes/submit", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Code submitted!",
-        description: "Your code has been submitted for review. Thank you!",
-      });
-      setSubmitOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/codes"] });
-    },
-    onError: () => {
-      toast({
-        title: "Submission failed",
-        description: "There was an error submitting your code. Please try again.",
-        variant: "destructive",
-      });
-    },
   });
 
   const codes = codesData?.codes || [];
@@ -170,8 +146,6 @@ export default function Category() {
       <SubmitModal
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        onSubmit={(data) => submitMutation.mutate(data)}
-        isSubmitting={submitMutation.isPending}
       />
     </div>
   );

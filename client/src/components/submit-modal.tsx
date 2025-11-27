@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { Loader2, Send } from "lucide-react";
 import {
   Dialog,
@@ -28,30 +29,55 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categories, submitCodeSchema, type SubmitCode } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubmitModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: SubmitCode) => void;
-  isSubmitting: boolean;
 }
 
-export function SubmitModal({ open, onOpenChange, onSubmit, isSubmitting }: SubmitModalProps) {
+export function SubmitModal({ open, onOpenChange }: SubmitModalProps) {
+  const { toast } = useToast();
+  
   const form = useForm<SubmitCode>({
     resolver: zodResolver(submitCodeSchema),
     defaultValues: {
       title: "",
       code: "",
       description: "",
-      category: "",
+      category: "" as any,
       submitterName: "",
       submitterEmail: "",
     },
   });
 
+  const submitMutation = useMutation({
+    mutationFn: async (data: SubmitCode) => {
+      const response = await apiRequest("POST", "/api/codes/submit", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Code submitted!",
+        description: "Your code has been submitted for review. We'll notify you once it's approved.",
+      });
+      form.reset();
+      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/codes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/codes"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Submission failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = (data: SubmitCode) => {
-    onSubmit(data);
-    form.reset();
+    submitMutation.mutate(data);
   };
 
   return (
@@ -200,10 +226,10 @@ export function SubmitModal({ open, onOpenChange, onSubmit, isSubmitting }: Subm
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={submitMutation.isPending}
                 data-testid="button-confirm-submit"
               >
-                {isSubmitting ? (
+                {submitMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Submitting...

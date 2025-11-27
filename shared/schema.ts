@@ -1,6 +1,7 @@
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 export const categories = [
   { id: "discord", name: "Discord", icon: "MessageCircle", description: "Discord server invites & Nitro codes" },
@@ -17,6 +18,32 @@ export const categories = [
 
 export type CategoryId = typeof categories[number]["id"];
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  isAdmin: boolean("is_admin").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+
 export const codes = pgTable("codes", {
   id: varchar("id", { length: 36 }).primaryKey(),
   title: text("title").notNull(),
@@ -26,6 +53,7 @@ export const codes = pgTable("codes", {
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   isVerified: boolean("is_verified").default(false),
   copyCount: integer("copy_count").default(0),
+  submitterId: varchar("submitter_id", { length: 36 }),
   submitterName: text("submitter_name"),
   submitterEmail: text("submitter_email"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -52,17 +80,38 @@ export type InsertCode = z.infer<typeof insertCodeSchema>;
 export type Code = typeof codes.$inferSelect;
 export type SubmitCode = z.infer<typeof submitCodeSchema>;
 
-export const users = pgTable("users", {
+// Favorites table for users to save codes
+export const favorites = pgTable("favorites", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  isAdmin: boolean("is_admin").default(false),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  codeId: varchar("code_id", { length: 36 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = typeof favorites.$inferInsert;
+
+// Ratings table for code upvotes/downvotes
+export const ratings = pgTable("ratings", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  codeId: varchar("code_id", { length: 36 }).notNull(),
+  value: integer("value").notNull(), // 1 for upvote, -1 for downvote
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type Rating = typeof ratings.$inferSelect;
+export type InsertRating = typeof ratings.$inferInsert;
+
+// Reports table for flagging problematic codes
+export const reports = pgTable("reports", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  codeId: varchar("code_id", { length: 36 }).notNull(),
+  reason: text("reason").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, reviewed, dismissed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = typeof reports.$inferInsert;

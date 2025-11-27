@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { categories, type Code, type SubmitCode } from "@shared/schema";
+import { categories, type Code } from "@shared/schema";
 import { format } from "date-fns";
 
 export default function Admin() {
@@ -78,20 +78,6 @@ export default function Admin() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to verify code.", variant: "destructive" });
-    },
-  });
-
-  const submitMutation = useMutation({
-    mutationFn: async (data: SubmitCode) => {
-      return apiRequest("POST", "/api/codes/submit", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Code submitted!",
-        description: "Your code has been submitted for review.",
-      });
-      setSubmitOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/codes"] });
     },
   });
 
@@ -291,8 +277,6 @@ export default function Admin() {
       <SubmitModal
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        onSubmit={(data) => submitMutation.mutate(data)}
-        isSubmitting={submitMutation.isPending}
       />
     </div>
   );

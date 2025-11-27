@@ -1,14 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, useSearch } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { Navigation } from "@/components/navigation";
 import { SearchFilter } from "@/components/search-filter";
 import { CodeGrid } from "@/components/code-grid";
 import { SubmitModal } from "@/components/submit-modal";
 import { Footer } from "@/components/footer";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Code, SubmitCode } from "@shared/schema";
+import type { Code } from "@shared/schema";
 
 export default function Browse() {
   const searchParams = useSearch();
@@ -19,7 +17,6 @@ export default function Browse() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
-  const { toast } = useToast();
   
   useEffect(() => {
     setSearchQuery(urlQuery);
@@ -27,27 +24,6 @@ export default function Browse() {
 
   const { data: codesData, isLoading } = useQuery<{ codes: Code[]; counts: Record<string, number> }>({
     queryKey: ["/api/codes"],
-  });
-
-  const submitMutation = useMutation({
-    mutationFn: async (data: SubmitCode) => {
-      return apiRequest("POST", "/api/codes/submit", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Code submitted!",
-        description: "Your code has been submitted for review. Thank you!",
-      });
-      setSubmitOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/codes"] });
-    },
-    onError: () => {
-      toast({
-        title: "Submission failed",
-        description: "There was an error submitting your code. Please try again.",
-        variant: "destructive",
-      });
-    },
   });
 
   const codes = codesData?.codes || [];
@@ -152,8 +128,6 @@ export default function Browse() {
       <SubmitModal
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        onSubmit={(data) => submitMutation.mutate(data)}
-        isSubmitting={submitMutation.isPending}
       />
     </div>
   );

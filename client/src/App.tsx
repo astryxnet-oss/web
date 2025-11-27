@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import Browse from "@/pages/browse";
 import Category from "@/pages/category";
 import Admin from "@/pages/admin";
+import Profile from "@/pages/profile";
+import Favorites from "@/pages/favorites";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/browse" component={Browse} />
       <Route path="/category/:id" component={Category} />
       <Route path="/admin" component={Admin} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/favorites" component={Favorites} />
       <Route component={NotFound} />
     </Switch>
   );
