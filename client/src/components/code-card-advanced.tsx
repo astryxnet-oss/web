@@ -27,9 +27,10 @@ interface CodeCardAdvancedProps {
   code: Code;
   onCopy?: (codeId: string) => void;
   showStatus?: boolean;
+  isAdvertising?: boolean;
 }
 
-export function CodeCardAdvanced({ code, onCopy, showStatus }: CodeCardAdvancedProps) {
+export function CodeCardAdvanced({ code, onCopy, showStatus, isAdvertising }: CodeCardAdvancedProps) {
   const [copied, setCopied] = useState(false);
   const [localCopyCount, setLocalCopyCount] = useState(code.copyCount || 0);
   const [showDetails, setShowDetails] = useState(false);
@@ -65,6 +66,16 @@ export function CodeCardAdvanced({ code, onCopy, showStatus }: CodeCardAdvancedP
       await navigator.clipboard.writeText(window.location.href);
       toast({ title: "Link copied!", description: "Share link copied to clipboard" });
     }
+  };
+
+  const handleDownload = () => {
+    const element = document.createElement("a");
+    const file = new Blob([code.code], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${code.title.replace(/\s+/g, '_')}_${code.id}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
@@ -151,10 +162,12 @@ export function CodeCardAdvanced({ code, onCopy, showStatus }: CodeCardAdvancedP
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Copy className="h-3 w-3" />
-              {localCopyCount.toLocaleString()}
-            </span>
+            {!isAdvertising && (
+              <span className="flex items-center gap-1">
+                <Copy className="h-3 w-3" />
+                {localCopyCount.toLocaleString()}
+              </span>
+            )}
             {code.createdAt && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -207,42 +220,49 @@ export function CodeCardAdvanced({ code, onCopy, showStatus }: CodeCardAdvancedP
                     )}
                   </div>
                   
-                  <Button onClick={handleCopy} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Code
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleCopy} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Code
+                        </>
+                      )}
+                    </Button>
+                    <Button onClick={handleDownload} variant="outline" className="flex-1">
+                      Download
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
             
-            <Button
-              size="sm"
-              variant={copied ? "default" : "secondary"}
-              onClick={handleCopy}
-              className={`min-w-[90px] transition-all ${copied ? "bg-gradient-to-r from-pink-500 to-purple-600" : ""}`}
-              data-testid="button-copy-code"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </>
-              )}
-            </Button>
+            {!isAdvertising && (
+              <Button
+                size="sm"
+                variant={copied ? "default" : "secondary"}
+                onClick={handleCopy}
+                className={`min-w-[90px] transition-all ${copied ? "bg-gradient-to-r from-pink-500 to-purple-600" : ""}`}
+                data-testid="button-copy-code"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
