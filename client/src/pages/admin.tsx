@@ -9,7 +9,9 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle,
-  Loader2 
+  Loader2,
+  Shield,
+  Trash2
 } from "lucide-react";
 import { Navigation } from "@/components/navigation";
 import { SubmitModal } from "@/components/submit-modal";
@@ -26,19 +28,69 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { categories, type Code } from "@shared/schema";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
   const { toast } = useToast();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: allCodes = [], isLoading } = useQuery<Code[]>({
     queryKey: ["/api/admin/codes"],
+    enabled: isAuthenticated && user?.isAdmin,
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navigation onSubmitClick={() => setSubmitOpen(true)} />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user?.isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navigation onSubmitClick={() => setSubmitOpen(true)} />
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="p-8 max-w-md text-center">
+            <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground mb-4">
+              You need admin privileges to access this page.
+            </p>
+            <Link href="/">
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-600">
+                Back to Home
+              </Button>
+            </Link>
+          </Card>
+        </main>
+        <Footer />
+        <SubmitModal open={submitOpen} onOpenChange={setSubmitOpen} />
+      </div>
+    );
+  }
 
   const approveMutation = useMutation({
     mutationFn: async (codeId: string) => {
@@ -78,6 +130,20 @@ export default function Admin() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to verify code.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (codeId: string) => {
+      return apiRequest("DELETE", `/api/admin/codes/${codeId}`, {});
+    },
+    onSuccess: () => {
+      toast({ title: "Code deleted", description: "The code has been permanently deleted." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/codes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/codes"] });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete code.", variant: "destructive" });
     },
   });
 
@@ -258,6 +324,34 @@ export default function Admin() {
                                     Verify
                                   </Button>
                                 )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Code</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{code.title}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteMutation.mutate(code.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                             </TableCell>
                           </TableRow>

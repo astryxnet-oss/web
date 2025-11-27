@@ -84,9 +84,9 @@ export function SubmitModal({ open, onOpenChange }: SubmitModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Submit a Code</DialogTitle>
+          <DialogTitle className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Submit</DialogTitle>
           <DialogDescription>
-            Share a code with the community. It will be reviewed before being published.
+            Share free codes or advertise your Discord bots, servers, and Minecraft addons. It will be reviewed before being published.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,7 +105,14 @@ export function SubmitModal({ open, onOpenChange }: SubmitModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      <SelectItem disabled value="codes-header" className="font-semibold text-pink-500">— Codes —</SelectItem>
+                      {categories.filter(cat => cat.type === "codes").map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem disabled value="ads-header" className="font-semibold text-purple-500">— Advertising —</SelectItem>
+                      {categories.filter(cat => cat.type === "advertising").map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
                         </SelectItem>
@@ -125,7 +132,7 @@ export function SubmitModal({ open, onOpenChange }: SubmitModalProps) {
                   <FormLabel>Title *</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="e.g., 50% off Discord Nitro" 
+                      placeholder="e.g., Free Discord Nitro Code" 
                       {...field} 
                       data-testid="input-submit-title"
                     />
@@ -227,6 +234,7 @@ export function SubmitModal({ open, onOpenChange }: SubmitModalProps) {
               <Button 
                 type="submit" 
                 disabled={submitMutation.isPending}
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
                 data-testid="button-confirm-submit"
               >
                 {submitMutation.isPending ? (

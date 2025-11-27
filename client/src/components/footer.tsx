@@ -11,14 +11,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                <Code2 className="h-5 w-5 text-primary-foreground" />
+              <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-md flex items-center justify-center">
+                <Code2 className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold text-xl">FreeCodeHub</span>
+              <span className="font-bold text-xl bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Alpha Source</span>
             </Link>
             <p className="text-muted-foreground text-sm mb-4">
-              Your ultimate destination for free promo codes, discount codes, 
-              and freebies across all categories.
+              Your destination for free codes and advertising your Discord bots, 
+              servers, and Minecraft addons.
             </p>
             <div className="flex gap-2">
               <a 
@@ -78,7 +78,7 @@ export function Footer() {
 
         <div className="border-t border-border mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} FreeCodeHub. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Alpha Source. All rights reserved.</p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>

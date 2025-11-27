@@ -1,4 +1,4 @@
-import { CodeCard } from "./code-card";
+import { CodeCardAdvanced } from "./code-card-advanced";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileCode2 } from "lucide-react";
 import type { Code } from "@shared/schema";
@@ -52,7 +52,7 @@ export function CodeGrid({ codes, isLoading, onCopy, emptyMessage, showStatus }:
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {codes.map((code) => (
-        <CodeCard key={code.id} code={code} onCopy={onCopy} showStatus={showStatus} />
+        <CodeCardAdvanced key={code.id} code={code} onCopy={onCopy} showStatus={showStatus} />
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Code2, Plus, Shield, Search, User, LogOut, Heart } from "lucide-react";
+import { Menu, X, Code2, Plus, Shield, Search, User, LogOut, Heart, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,7 +48,7 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
     { href: "/browse", label: "Browse" },
     { href: "/category/discord", label: "Discord" },
     { href: "/category/minecraft", label: "Minecraft" },
-    { href: "/category/gaming", label: "Gaming" },
+    { href: "/category/discord-bots", label: "Bots" },
   ];
 
   const getUserInitials = () => {
@@ -67,10 +67,10 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between gap-4 h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0" data-testid="link-home">
-            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-              <Code2 className="h-5 w-5 text-primary-foreground" />
+            <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-md flex items-center justify-center">
+              <Code2 className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl hidden sm:inline">FreeCodeHub</span>
+            <span className="font-bold text-xl hidden sm:inline bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Alpha Source</span>
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">
@@ -135,11 +135,19 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
-                      <Shield className="h-4 w-4" />
-                      Admin
+                    <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="h-4 w-4" />
+                      Settings
                     </Link>
                   </DropdownMenuItem>
+                  {user?.isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer text-destructive">
                     <LogOut className="h-4 w-4" />
@@ -214,6 +222,20 @@ export function Navigation({ onSubmitClick, searchQuery = "", onSearchChange }: 
                     Favorites
                   </Button>
                 </Link>
+                <Link href="/settings">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => setIsOpen(false)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Button>
+                </Link>
+                {user?.isAdmin && (
+                  <Link href="/admin">
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => setIsOpen(false)}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
               </>
             )}
             <Button

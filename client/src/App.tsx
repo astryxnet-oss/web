@@ -10,6 +10,7 @@ import Category from "@/pages/category";
 import Admin from "@/pages/admin";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/profile" component={Profile} />
       <Route path="/favorites" component={Favorites} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

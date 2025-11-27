@@ -38,7 +38,7 @@ export function SearchFilter({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search codes..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10"
@@ -53,7 +53,14 @@ export function SearchFilter({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
+              <SelectItem disabled value="codes-header" className="font-semibold text-pink-500">— Codes —</SelectItem>
+              {categories.filter(cat => cat.type === "codes").map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+              <SelectItem disabled value="ads-header" className="font-semibold text-purple-500">— Advertising —</SelectItem>
+              {categories.filter(cat => cat.type === "advertising").map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.name}
                 </SelectItem>

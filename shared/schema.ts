@@ -4,16 +4,12 @@ import { z } from "zod";
 import { sql } from "drizzle-orm";
 
 export const categories = [
-  { id: "discord", name: "Discord", icon: "MessageCircle", description: "Discord server invites & Nitro codes" },
-  { id: "minecraft", name: "Minecraft", icon: "Gamepad2", description: "Server IPs & promo codes" },
-  { id: "websites", name: "Websites", icon: "Globe", description: "Website promo codes & coupons" },
-  { id: "gaming", name: "Gaming", icon: "Trophy", description: "Game keys & in-game rewards" },
-  { id: "software", name: "Software", icon: "Monitor", description: "Software licenses & trials" },
-  { id: "shopping", name: "Shopping", icon: "ShoppingBag", description: "Discount codes & deals" },
-  { id: "education", name: "Education", icon: "GraduationCap", description: "Course access & learning resources" },
-  { id: "tools", name: "Tools", icon: "Wrench", description: "Productivity & utility codes" },
-  { id: "streaming", name: "Streaming", icon: "Play", description: "Streaming service trials & codes" },
-  { id: "crypto", name: "Crypto", icon: "Coins", description: "Crypto bonuses & referral codes" },
+  { id: "discord", name: "Discord", icon: "MessageCircle", description: "Free Discord codes & giveaways", type: "codes" },
+  { id: "minecraft", name: "Minecraft", icon: "Gamepad2", description: "Free Minecraft codes & keys", type: "codes" },
+  { id: "websites", name: "Websites", icon: "Globe", description: "Free website codes & access", type: "codes" },
+  { id: "discord-bots", name: "Discord Bots", icon: "Bot", description: "Advertise your Discord bots", type: "advertising" },
+  { id: "discord-servers", name: "Discord Servers", icon: "Server", description: "Advertise your Discord servers", type: "advertising" },
+  { id: "minecraft-addons", name: "Minecraft Addons", icon: "Puzzle", description: "Advertise mods, plugins & resource packs", type: "advertising" },
 ] as const;
 
 export type CategoryId = typeof categories[number]["id"];

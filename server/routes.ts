@@ -265,7 +265,7 @@ export async function registerRoutes(
   });
 
   // Admin routes (protected by isAdmin)
-  app.get("/api/admin/codes", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/codes", isAdmin, async (req: any, res) => {
     try {
       const codes = await storage.getAllCodes();
       res.json(codes);
@@ -275,7 +275,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/codes/:id/approve", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/codes/:id/approve", isAdmin, async (req: any, res) => {
     try {
       const code = await storage.updateCode(req.params.id, { status: "approved" });
       if (!code) {
@@ -288,7 +288,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/codes/:id/reject", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/codes/:id/reject", isAdmin, async (req: any, res) => {
     try {
       const code = await storage.updateCode(req.params.id, { status: "rejected" });
       if (!code) {
@@ -301,7 +301,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/codes/:id/verify", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/codes/:id/verify", isAdmin, async (req: any, res) => {
     try {
       const code = await storage.updateCode(req.params.id, { isVerified: true });
       if (!code) {
@@ -314,7 +314,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/admin/codes/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/codes/:id", isAdmin, async (req: any, res) => {
     try {
       const success = await storage.deleteCode(req.params.id);
       if (!success) {
@@ -327,7 +327,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/reports", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/reports", isAdmin, async (req: any, res) => {
     try {
       const reports = await storage.getAllPendingReports();
       res.json(reports);
@@ -337,7 +337,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/reports/:id/review", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/reports/:id/review", isAdmin, async (req: any, res) => {
     try {
       const { status } = req.body;
       if (!["reviewed", "dismissed"].includes(status)) {

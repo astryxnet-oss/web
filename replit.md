@@ -1,12 +1,22 @@
-# FreeCodeHub - Promo Code Sharing Platform
+# Alpha Source - Resource Sharing Platform
 
 ## Overview
 
-FreeCodeHub is a community-driven platform for discovering and sharing free promotional codes, discount codes, and freebies across multiple categories including Discord, Minecraft, gaming, software, shopping, and more. The platform features a clean, Material Design-inspired interface with user code submissions, admin moderation, and category-based browsing.
+Alpha Source is a community-driven platform for discovering and sharing free promotional codes, Discord bots, Minecraft addons, server advertisements, and more. The platform features a modern pink/purple themed interface with user submissions, admin moderation, account settings, and category-based browsing.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+- Rebranded from FreeCodeHub to Alpha Source
+- Implemented pink/purple gradient theme across the application
+- Added new categories: Discord Bots, Minecraft Addons, Server Advertisements
+- Added account settings page with profile, notifications, and appearance tabs
+- Restricted admin page access to users with admin privileges only
+- Enhanced code cards with advanced view UI including detail modal
+- Updated submit modal with new resource types
 
 ## System Architecture
 
@@ -20,11 +30,11 @@ Preferred communication style: Simple, everyday language.
 - Shadcn UI component library (Radix UI primitives) for accessible, pre-built components
 
 **Design System**
-- Material Design principles with inspiration from GitHub, Linear, and Discord
+- Pink/purple gradient theme with modern aesthetic
 - Custom Tailwind configuration with HSL-based color tokens for light/dark theme support
 - Typography: Inter font for UI, JetBrains Mono for code display
-- Spacing system using Tailwind units (2, 4, 6, 8) for consistent rhythm
-- No glowing effects or heavy animations - focus on clarity and functionality
+- Gradient accents on primary buttons and branding elements
+- Focus on clarity and functionality
 
 **State Management**
 - TanStack Query (React Query) for server state management, caching, and data fetching
@@ -32,13 +42,23 @@ Preferred communication style: Simple, everyday language.
 - Custom theme provider for light/dark mode persistence via localStorage
 
 **Key UI Components**
-- Navigation bar with category links, search, and submit CTA
-- Hero section with statistics and primary actions
-- Category grid (3-4 columns responsive) with icons and code counts
-- Code display cards with copy functionality, verification badges, and metadata
+- Navigation bar with category links, search, user menu with settings link, and submit CTA
+- Hero section with statistics and gradient primary actions
+- Category grid (responsive) with icons and code counts
+- Advanced code display cards with copy functionality, detail view modal, and metadata
 - Search and filter bar with category/status dropdowns and sorting
 - Modal dialogs for code submission with form validation
-- Admin panel for code moderation (approve/reject/delete)
+- Account settings page with profile, notifications, and appearance tabs
+- Admin panel for code moderation (approve/reject/delete) - restricted to admin users
+
+**Pages**
+- Home: Hero section, category grid, latest codes
+- Browse: All approved codes with search and filtering
+- Category: Codes filtered by category
+- Profile: User's submitted codes and stats
+- Favorites: User's saved codes
+- Settings: Account settings with profile, notifications, appearance
+- Admin: Code moderation dashboard (admin-only)
 
 ### Backend Architecture
 
@@ -59,7 +79,8 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/codes/category/:category` - Fetch codes filtered by category
 - `POST /api/codes/submit` - Submit new code for moderation
 - `POST /api/codes/:id/copy` - Increment copy counter
-- Admin endpoints: approve, reject, delete codes (under `/api/admin/codes`)
+- Admin endpoints: approve, reject, verify, delete codes (under `/api/admin/codes`)
+- User endpoints: favorites, user codes (under `/api/user/`)
 
 **Data Validation**
 - Zod schema validation for all incoming data
@@ -74,20 +95,22 @@ Preferred communication style: Simple, everyday language.
 - Schema defined in TypeScript using Drizzle's table builders
 
 **Schema Design**
-- `codes` table with fields: id, title, code, description, category, status, isVerified, copyCount, submitterName, submitterEmail, createdAt
+- `codes` table with fields: id, title, code, description, category, status, isVerified, copyCount, submitterId, submitterName, submitterEmail, createdAt
+- `users` table with fields: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
+- `favorites` table for user saved codes
+- `ratings` table for code upvotes/downvotes
+- `reports` table for flagging problematic codes
 - Status values: "pending", "approved", "rejected"
-- Category validation against predefined category list (10 categories)
+- Category validation against predefined category list (13 categories)
 - UUID-based primary keys for distributed scalability
+
+**Categories**
+- Discord, Discord Bots, Minecraft, Minecraft Addons, Server Ads, Websites, Gaming, Software, Shopping, Education, Tools, Streaming, Crypto
 
 **Storage Abstraction**
 - `IStorage` interface defining data access methods
-- `MemStorage` in-memory implementation for development with seed data
-- Designed for easy swap to database implementation in production
-- Methods: CRUD operations for codes, category counting, copy count incrementing
-
-**Data Seeding**
-- Sample codes across all categories pre-loaded for development
-- Includes verified codes with realistic copy counts and timestamps
+- `DatabaseStorage` implementation for PostgreSQL
+- Methods: CRUD operations for codes, category counting, copy count incrementing, favorites, ratings, reports
 
 ### External Dependencies
 
@@ -105,7 +128,6 @@ Preferred communication style: Simple, everyday language.
 - Class Variance Authority (CVA) for component variant management
 - clsx and tailwind-merge for conditional className composition
 - date-fns for date formatting and manipulation
-- nanoid for unique ID generation
 
 **Development Tools**
 - Drizzle Kit for database migrations and schema management
@@ -115,7 +137,7 @@ Preferred communication style: Simple, everyday language.
 
 **Database & Session**
 - @neondatabase/serverless for PostgreSQL connections
-- connect-pg-simple for PostgreSQL session storage (configured but not actively used)
+- connect-pg-simple for PostgreSQL session storage
 - drizzle-zod for generating Zod schemas from Drizzle tables
 
 **Build Strategy**
