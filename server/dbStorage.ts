@@ -2,6 +2,7 @@ import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, 
 import { db } from "./db";
 import { eq, sql, desc, and, sum } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import * as bcrypt from "bcrypt";
 import type { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
@@ -24,6 +25,36 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async createUserWithPassword(firstName: string, lastName: string, email: string, password: string): Promise<User> {
+    const id = randomUUID();
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [user] = await db
+      .insert(users)
+      .values({
+        id,
+        firstName,
+        lastName,
+        email,
+        passwordHash,
+      })
+      .returning();
+    return user;
+  }
+
+  async verifyPassword(email: string, password: string): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.passwordHash) {
+      return undefined;
+    }
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    return isValid ? user : undefined;
   }
 
   // Code operations

@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import Browse from "@/pages/browse";
 import Category from "@/pages/category";
 import Admin from "@/pages/admin";
+import Login from "@/pages/login";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
 import Settings from "@/pages/settings";
@@ -18,6 +19,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/browse" component={Browse} />
+      <Route path="/login" component={Login} />
       <Route path="/category/:id" component={Category} />
       <Route path="/admin" component={Admin} />
       <Route path="/profile" component={Profile} />

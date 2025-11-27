@@ -108,35 +108,59 @@ export async function registerRoutes(
     }
   });
 
-  // Owner-only tag management (single owner ID hardcoded for security)
-  const OWNER_ID = process.env.REPLIT_OWNER_ID || "50304760"; // Replace with actual owner ID
-  
-  const isOwner = (userId: string) => userId === OWNER_ID;
-  
-  app.post("/api/admin/users/:userId/tags", isAuthenticated, async (req: any, res) => {
+  // Email/Password authentication routes
+  app.post("/api/auth/signup", async (req: any, res) => {
     try {
-      const currentUserId = req.user.claims.sub;
-      if (!isOwner(currentUserId)) {
-        return res.status(403).json({ message: "Forbidden: Only owner can manage tags" });
+      const { firstName, lastName, email, password } = req.body;
+      
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ error: "Missing required fields" });
       }
-      
-      const { userId } = req.params;
-      const { tags } = req.body;
-      
-      if (!Array.isArray(tags)) {
-        return res.status(400).json({ error: "Tags must be an array" });
+
+      // Check if user exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "Email already registered" });
       }
+
+      // Create user with password
+      const user = await storage.createUserWithPassword(firstName, lastName, email, password);
       
-      // Update user with custom tags - you'll need to implement this in storage
-      const db = require("./db");
-      const result = await db.update(db.schema.users)
-        .set({ customTags: JSON.stringify(tags) })
-        .where(db.schema.users.id.equals(userId));
-      
-      res.json({ success: true, tags });
+      // Log them in
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed after signup" });
+        }
+        res.json({ success: true, user: { id: user.id, email: user.email } });
+      });
     } catch (error) {
-      console.error("Error updating tags:", error);
-      res.status(500).json({ error: "Failed to update tags" });
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+
+      const user = await storage.verifyPassword(email, password);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed" });
+        }
+        res.json({ success: true, user: { id: user.id, email: user.email } });
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
     }
   });
 
