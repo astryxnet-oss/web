@@ -21,8 +21,11 @@ export async function registerRoutes(
   }
   
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+        return res.json({ user: null });
+      }
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
@@ -71,12 +74,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/codes/submit", async (req: any, res) => {
+  app.post("/api/codes/submit", isAuthenticated, async (req: any, res) => {
     try {
       const validatedData = submitCodeSchema.parse(req.body);
       
-      // Get user ID if authenticated
-      const userId = req.user?.claims?.sub || null;
+      // Get user ID from authenticated user
+      const userId = req.user.claims.sub;
       
       const code = await storage.createCode({
         title: validatedData.title,
@@ -144,11 +147,11 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/advertisements/submit", async (req: any, res) => {
+  app.post("/api/advertisements/submit", isAuthenticated, async (req: any, res) => {
     try {
       const validatedData = submitAdvertisementSchema.parse(req.body);
       
-      const userId = req.user?.claims?.sub || null;
+      const userId = req.user.claims.sub;
       
       const ad = await storage.createAdvertisement({
         title: validatedData.title,

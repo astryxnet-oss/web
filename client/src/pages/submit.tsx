@@ -28,6 +28,8 @@ import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
+import { isUnauthorizedError } from "@/lib/authUtils";
 import { categories, submitCodeSchema, submitAdvertisementSchema, type SubmitCode, type SubmitAdvertisement } from "@shared/schema";
 
 type SubmissionType = "code" | "advertisement" | null;
@@ -36,6 +38,7 @@ export default function Submit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [submissionType, setSubmissionType] = useState<SubmissionType>(null);
+  const { isAuthenticated, isLoading } = useAuth();
 
   const codeCategories = categories.filter(c => c.type === "codes");
   const adCategories = categories.filter(c => c.type === "advertising");
@@ -80,6 +83,17 @@ export default function Submit() {
       setLocation("/");
     },
     onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to submit codes.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
       toast({
         title: "Submission failed",
         description: error instanceof Error ? error.message : "Something went wrong.",
@@ -103,6 +117,17 @@ export default function Submit() {
       setLocation("/");
     },
     onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to submit listings.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
       toast({
         title: "Submission failed",
         description: error instanceof Error ? error.message : "Something went wrong.",
@@ -118,6 +143,36 @@ export default function Submit() {
   const handleAdSubmit = (data: SubmitAdvertisement) => {
     submitAdMutation.mutate(data);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navigation onSubmitClick={() => {}} />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navigation onSubmitClick={() => {}} />
+        <main className="flex-1 flex items-center justify-center">
+          <Card className="p-8 text-center max-w-md">
+            <h2 className="text-xl font-bold mb-2">Login Required</h2>
+            <p className="text-muted-foreground mb-4">Please log in to submit codes or listings.</p>
+            <Button onClick={() => window.location.href = "/api/login"} data-testid="button-login-redirect">
+              Log In
+            </Button>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
