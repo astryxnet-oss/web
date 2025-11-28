@@ -37,7 +37,13 @@ export default function Login() {
 
       const response: any = await res.json();
 
-      if (response.requiresTwoFactor) {
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Login failed", 
+          variant: "destructive" 
+        });
+      } else if (response.requiresTwoFactor) {
         setTwoFactorRequired(true);
         setChallengeToken(response.challengeToken);
         toast({ title: "2FA Required", description: "Enter your authentication code" });
@@ -69,7 +75,13 @@ export default function Login() {
 
       const response: any = await res.json();
 
-      if (response.success) {
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Invalid 2FA code", 
+          variant: "destructive" 
+        });
+      } else if (response.success) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         toast({ title: "Success", description: "Logged in successfully!" });
         setTimeout(() => setLocation("/"), 1000);

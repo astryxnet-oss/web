@@ -47,7 +47,13 @@ export default function Signup() {
 
       const response: any = await res.json();
 
-      if (response.success) {
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Signup failed", 
+          variant: "destructive" 
+        });
+      } else if (response.success) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         setUserEmail(formData.email);
         setShowVerificationMessage(true);

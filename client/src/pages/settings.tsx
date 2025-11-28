@@ -87,12 +87,20 @@ export default function Settings() {
     try {
       const res = await apiRequest("POST", "/api/auth/2fa/setup", {});
       const response: any = await res.json();
-      setSetupData({
-        qrCodeUrl: response.qrCodeUrl,
-        backupCodes: response.backupCodes,
-        secret: response.secret
-      });
-      setTwoFactorSetupOpen(true);
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Failed to setup 2FA", 
+          variant: "destructive" 
+        });
+      } else {
+        setSetupData({
+          qrCodeUrl: response.qrCodeUrl,
+          backupCodes: response.backupCodes,
+          secret: response.secret
+        });
+        setTwoFactorSetupOpen(true);
+      }
     } catch (error: any) {
       toast({ 
         title: "Error", 
@@ -108,12 +116,20 @@ export default function Settings() {
     setVerifying(true);
     try {
       const res = await apiRequest("POST", "/api/auth/2fa/verify", { code: verifyCode });
-      await res.json();
-      toast({ title: "Success", description: "Two-factor authentication enabled!" });
-      setTwoFactorSetupOpen(false);
-      setSetupData(null);
-      setVerifyCode("");
-      refetch();
+      const response: any = await res.json();
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Invalid code", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Success", description: "Two-factor authentication enabled!" });
+        setTwoFactorSetupOpen(false);
+        setSetupData(null);
+        setVerifyCode("");
+        refetch();
+      }
     } catch (error: any) {
       toast({ 
         title: "Error", 
@@ -129,11 +145,19 @@ export default function Settings() {
     setVerifying(true);
     try {
       const res = await apiRequest("POST", "/api/auth/2fa/disable", { code: disableCode });
-      await res.json();
-      toast({ title: "Success", description: "Two-factor authentication disabled" });
-      setTwoFactorDisableOpen(false);
-      setDisableCode("");
-      refetch();
+      const response: any = await res.json();
+      if (!res.ok) {
+        toast({ 
+          title: "Error", 
+          description: response.error || "Invalid code", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Success", description: "Two-factor authentication disabled" });
+        setTwoFactorDisableOpen(false);
+        setDisableCode("");
+        refetch();
+      }
     } catch (error: any) {
       toast({ 
         title: "Error", 
