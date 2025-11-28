@@ -1,7 +1,7 @@
-import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, codes, users, favorites, ratings, reports, advertisements, categories } from "@shared/schema";
+import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, type EmailVerificationToken, type LoginChallenge, type AuditLog, type SiteSetting, type UserRole, codes, users, favorites, ratings, reports, advertisements, emailVerificationTokens, loginChallenges, auditLogs, siteSettings, categories } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, and, sum } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { eq, sql, desc, and, sum, lt, count } from "drizzle-orm";
+import { randomUUID, randomBytes } from "crypto";
 import * as bcrypt from "bcrypt";
 import type { IStorage } from "./storage";
 
@@ -64,6 +64,183 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return result[0];
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async getAllUsers(limit: number = 100, offset: number = 0): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: count() }).from(users);
+    return result[0]?.count || 0;
+  }
+
+  // Email verification
+  async createEmailVerificationToken(userId: string, type: string = "signup"): Promise<EmailVerificationToken> {
+    const id = randomUUID();
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    const [result] = await db
+      .insert(emailVerificationTokens)
+      .values({ id, userId, token, type, expiresAt })
+      .returning();
+    return result;
+  }
+
+  async getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined> {
+    const result = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token))
+      .limit(1);
+    return result[0];
+  }
+
+  async deleteEmailVerificationToken(token: string): Promise<boolean> {
+    const result = await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token))
+      .returning();
+    return result.length > 0;
+  }
+
+  async deleteExpiredTokens(): Promise<void> {
+    await db
+      .delete(emailVerificationTokens)
+      .where(lt(emailVerificationTokens.expiresAt, new Date()));
+    await db
+      .delete(loginChallenges)
+      .where(lt(loginChallenges.expiresAt, new Date()));
+  }
+
+  // 2FA login challenges
+  async createLoginChallenge(userId: string): Promise<LoginChallenge> {
+    const id = randomUUID();
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    
+    const [result] = await db
+      .insert(loginChallenges)
+      .values({ id, userId, token, expiresAt })
+      .returning();
+    return result;
+  }
+
+  async getLoginChallenge(token: string): Promise<LoginChallenge | undefined> {
+    const result = await db
+      .select()
+      .from(loginChallenges)
+      .where(eq(loginChallenges.token, token))
+      .limit(1);
+    return result[0];
+  }
+
+  async deleteLoginChallenge(token: string): Promise<boolean> {
+    const result = await db
+      .delete(loginChallenges)
+      .where(eq(loginChallenges.token, token))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Role management
+  async updateUserRole(userId: string, role: UserRole): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ role, isAdmin: role === "owner" || role === "staff", updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async getOwner(): Promise<User | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "owner"))
+      .limit(1);
+    return result[0];
+  }
+
+  async getStaffUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "staff"))
+      .orderBy(desc(users.createdAt));
+  }
+
+  async hasOwner(): Promise<boolean> {
+    const owner = await this.getOwner();
+    return !!owner;
+  }
+
+  // Audit logging
+  async createAuditLog(
+    actorId: string, 
+    actorEmail: string | null, 
+    action: string, 
+    targetType?: string, 
+    targetId?: string, 
+    details?: any, 
+    ipAddress?: string
+  ): Promise<AuditLog> {
+    const id = randomUUID();
+    const [result] = await db
+      .insert(auditLogs)
+      .values({ id, actorId, actorEmail, action, targetType, targetId, details, ipAddress })
+      .returning();
+    return result;
+  }
+
+  async getAuditLogs(limit: number = 100, offset: number = 0): Promise<AuditLog[]> {
+    return await db
+      .select()
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  // Site settings
+  async getSiteSetting(key: string): Promise<any> {
+    const result = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.key, key))
+      .limit(1);
+    return result[0]?.value;
+  }
+
+  async setSiteSetting(key: string, value: any): Promise<SiteSetting> {
+    const [result] = await db
+      .insert(siteSettings)
+      .values({ key, value, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async getAllSiteSettings(): Promise<SiteSetting[]> {
+    return await db.select().from(siteSettings);
   }
 
   // Code operations

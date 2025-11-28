@@ -171,3 +171,48 @@ export const isAdmin: RequestHandler = async (req, res, next) => {
 
   return next();
 };
+
+export const isOwner: RequestHandler = async (req, res, next) => {
+  const user = req.user as any;
+
+  if (!req.isAuthenticated() || !user.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const dbUser = await storage.getUser(user.claims.sub);
+  if (dbUser?.role !== "owner") {
+    return res.status(403).json({ message: "Forbidden: Owner access required" });
+  }
+
+  return next();
+};
+
+export const isStaffOrOwner: RequestHandler = async (req, res, next) => {
+  const user = req.user as any;
+
+  if (!req.isAuthenticated() || !user.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const dbUser = await storage.getUser(user.claims.sub);
+  if (dbUser?.role !== "owner" && dbUser?.role !== "staff") {
+    return res.status(403).json({ message: "Forbidden: Staff access required" });
+  }
+
+  return next();
+};
+
+export const isEmailVerified: RequestHandler = async (req, res, next) => {
+  const user = req.user as any;
+
+  if (!req.isAuthenticated() || !user.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const dbUser = await storage.getUser(user.claims.sub);
+  if (!dbUser?.emailVerifiedAt) {
+    return res.status(403).json({ message: "Email verification required", code: "EMAIL_NOT_VERIFIED" });
+  }
+
+  return next();
+};

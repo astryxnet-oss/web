@@ -1,7 +1,11 @@
-import { pgTable, text, varchar, integer, boolean, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, jsonb, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
+
+// User role enum
+export const userRoleEnum = pgEnum("user_role", ["owner", "staff", "user"]);
+export type UserRole = "owner" | "staff" | "user";
 
 export const categories = [
   { id: "discord", name: "Discord", icon: "MessageCircle", description: "Free Discord codes & giveaways", type: "codes" },
@@ -50,16 +54,71 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  passwordHash: varchar("password_hash"), // For manual signup, null if using OAuth
+  passwordHash: varchar("password_hash"),
   isAdmin: boolean("is_admin").default(false),
-  tags: text("tags").array().default([]), // User tags like admin, verified, contributor
+  role: userRoleEnum("role").default("user"),
+  tags: text("tags").array().default([]),
   bio: text("bio"),
+  emailVerifiedAt: timestamp("email_verified_at"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorSecret: varchar("two_factor_secret"),
+  twoFactorBackupCodes: text("two_factor_backup_codes"),
+  isBanned: boolean("is_banned").default(false),
+  bannedReason: text("banned_reason"),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Email verification tokens
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  type: varchar("type", { length: 20 }).notNull().default("signup"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+
+// 2FA login challenges (for pending 2FA verification during login)
+export const loginChallenges = pgTable("login_challenges", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type LoginChallenge = typeof loginChallenges.$inferSelect;
+
+// Audit log for admin actions
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  actorId: varchar("actor_id", { length: 36 }).notNull(),
+  actorEmail: varchar("actor_email"),
+  action: varchar("action", { length: 50 }).notNull(),
+  targetType: varchar("target_type", { length: 50 }),
+  targetId: varchar("target_id", { length: 36 }),
+  details: jsonb("details"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Site settings (key-value store for owner configuration)
+export const siteSettings = pgTable("site_settings", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: jsonb("value"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SiteSetting = typeof siteSettings.$inferSelect;
 
 // Advertisements table for listings (Discord bots, servers, Minecraft addons)
 export const advertisements = pgTable("advertisements", {

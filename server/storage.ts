@@ -1,4 +1,4 @@
-import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, categories } from "@shared/schema";
+import { type User, type UpsertUser, type Code, type InsertCode, type Favorite, type Rating, type Report, type Advertisement, type InsertAdvertisement, type EmailVerificationToken, type LoginChallenge, type AuditLog, type SiteSetting, type UserRole, categories } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -9,6 +9,35 @@ export interface IStorage {
   createUserWithPassword(firstName: string, lastName: string, email: string, password: string): Promise<User>;
   verifyPassword(email: string, password: string): Promise<User | undefined>;
   updateUserTags(userId: string, tags: string[]): Promise<User | undefined>;
+  updateUser(userId: string, updates: Partial<User>): Promise<User | undefined>;
+  getAllUsers(limit?: number, offset?: number): Promise<User[]>;
+  getUserCount(): Promise<number>;
+  
+  // Email verification
+  createEmailVerificationToken(userId: string, type?: string): Promise<EmailVerificationToken>;
+  getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined>;
+  deleteEmailVerificationToken(token: string): Promise<boolean>;
+  deleteExpiredTokens(): Promise<void>;
+  
+  // 2FA login challenges
+  createLoginChallenge(userId: string): Promise<LoginChallenge>;
+  getLoginChallenge(token: string): Promise<LoginChallenge | undefined>;
+  deleteLoginChallenge(token: string): Promise<boolean>;
+  
+  // Role management
+  updateUserRole(userId: string, role: UserRole): Promise<User | undefined>;
+  getOwner(): Promise<User | undefined>;
+  getStaffUsers(): Promise<User[]>;
+  hasOwner(): Promise<boolean>;
+  
+  // Audit logging
+  createAuditLog(actorId: string, actorEmail: string | null, action: string, targetType?: string, targetId?: string, details?: any, ipAddress?: string): Promise<AuditLog>;
+  getAuditLogs(limit?: number, offset?: number): Promise<AuditLog[]>;
+  
+  // Site settings
+  getSiteSetting(key: string): Promise<any>;
+  setSiteSetting(key: string, value: any): Promise<SiteSetting>;
+  getAllSiteSettings(): Promise<SiteSetting[]>;
   
   // Code operations
   getAllCodes(): Promise<Code[]>;
