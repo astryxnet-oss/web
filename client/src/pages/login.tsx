@@ -30,10 +30,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response: any = await apiRequest("POST", "/api/auth/login", {
+      const res = await apiRequest("POST", "/api/auth/login", {
         email: formData.email,
         password: formData.password,
       });
+
+      const response: any = await res.json();
 
       if (response.requiresTwoFactor) {
         setTwoFactorRequired(true);
@@ -60,10 +62,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response: any = await apiRequest("POST", "/api/auth/login", {
+      const res = await apiRequest("POST", "/api/auth/login", {
         challengeToken,
         twoFactorCode,
       });
+
+      const response: any = await res.json();
 
       if (response.success) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

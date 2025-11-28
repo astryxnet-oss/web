@@ -38,12 +38,14 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      const response: any = await apiRequest("POST", "/api/auth/signup", {
+      const res = await apiRequest("POST", "/api/auth/signup", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
       });
+
+      const response: any = await res.json();
 
       if (response.success) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

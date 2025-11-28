@@ -85,7 +85,8 @@ export default function Settings() {
   const handleSetup2FA = async () => {
     setSetupLoading(true);
     try {
-      const response: any = await apiRequest("POST", "/api/auth/2fa/setup", {});
+      const res = await apiRequest("POST", "/api/auth/2fa/setup", {});
+      const response: any = await res.json();
       setSetupData({
         qrCodeUrl: response.qrCodeUrl,
         backupCodes: response.backupCodes,
@@ -106,7 +107,8 @@ export default function Settings() {
   const handleVerify2FA = async () => {
     setVerifying(true);
     try {
-      await apiRequest("POST", "/api/auth/2fa/verify", { code: verifyCode });
+      const res = await apiRequest("POST", "/api/auth/2fa/verify", { code: verifyCode });
+      await res.json();
       toast({ title: "Success", description: "Two-factor authentication enabled!" });
       setTwoFactorSetupOpen(false);
       setSetupData(null);
@@ -126,7 +128,8 @@ export default function Settings() {
   const handleDisable2FA = async () => {
     setVerifying(true);
     try {
-      await apiRequest("POST", "/api/auth/2fa/disable", { code: disableCode });
+      const res = await apiRequest("POST", "/api/auth/2fa/disable", { code: disableCode });
+      await res.json();
       toast({ title: "Success", description: "Two-factor authentication disabled" });
       setTwoFactorDisableOpen(false);
       setDisableCode("");
