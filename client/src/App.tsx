@@ -15,6 +15,9 @@ import Profile from "@/pages/profile";
 import UserProfile from "@/pages/user-profile";
 import Favorites from "@/pages/favorites";
 import Settings from "@/pages/settings";
+import VerifyEmail from "@/pages/verify-email";
+import OwnerDashboard from "@/pages/owner-dashboard";
+import StaffDashboard from "@/pages/staff-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +34,9 @@ function Router() {
       <Route path="/user/:id" component={UserProfile} />
       <Route path="/favorites" component={Favorites} />
       <Route path="/settings" component={Settings} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/owner" component={OwnerDashboard} />
+      <Route path="/staff" component={StaffDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

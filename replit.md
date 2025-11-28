@@ -25,6 +25,19 @@ Preferred communication style: Simple, everyday language.
   - Extended admin dashboard to manage both codes and advertisements
   - Added user profile viewing page (/user/:id)
   - Added "No codes found" and "No listings found" empty states throughout the app
+- **November 2025: Advanced Authentication System**
+  - Implemented email/password authentication with bcrypt password hashing
+  - Added email verification system with Resend email service
+  - Implemented two-factor authentication (2FA) with TOTP (using otplib)
+  - Added QR code generation for 2FA setup
+  - Implemented backup codes for 2FA recovery
+  - Added 2FA verification flow in login process
+  - Created dedicated settings page with security/2FA tab
+  - Implemented three-tier role system: owner > staff > user
+  - Added owner dashboard for user management, ban/unban, role changes
+  - Added staff dashboard for content moderation (approve/reject/delete codes and ads)
+  - Implemented audit logging for all moderation actions
+  - Created email verification page (/verify-email)
 
 ## System Architecture
 
@@ -63,13 +76,16 @@ Preferred communication style: Simple, everyday language.
 - Home: Hero section, category grid, latest codes
 - Browse: All approved codes with search and filtering
 - Category: Codes filtered by category
-- Login: Dedicated login page with Google OAuth and email/password options
-- Signup: Dedicated signup page with email/password registration
+- Login: Dedicated login page with Replit OAuth and email/password options (supports 2FA)
+- Signup: Dedicated signup page with email/password registration (sends verification email)
 - Submit: Advanced submission page with code/advertisement type selection
 - Profile: User's submitted codes and stats
 - User Profile: View other users' profiles with their tags
 - Favorites: User's saved codes
-- Settings: Account settings with profile, notifications, appearance
+- Settings: Account settings with profile, security (2FA), notifications, appearance
+- Verify Email: Token-based email verification page
+- Owner Dashboard: User management, staff management, ban/unban, role changes, audit logs (owner-only)
+- Staff Dashboard: Content moderation with approve/reject/delete for codes and ads (staff/owner-only)
 - Admin: Code and advertisement moderation dashboard (admin-only)
 
 ### Backend Architecture
@@ -99,6 +115,29 @@ Preferred communication style: Simple, everyday language.
 - Admin endpoints: approve, reject, verify, delete ads (under `/api/admin/advertisements`)
 - Admin endpoints: update user tags (under `/api/admin/users/:id/tags`)
 - User endpoints: favorites, user codes, user advertisements (under `/api/user/`)
+- Auth endpoints:
+  - `POST /api/auth/signup` - Register new user with email verification
+  - `POST /api/auth/login` - Login with email/password (supports 2FA)
+  - `POST /api/auth/verify-email` - Verify email with token
+  - `POST /api/auth/2fa/setup` - Setup 2FA with QR code and backup codes
+  - `POST /api/auth/2fa/verify` - Verify and enable 2FA
+  - `POST /api/auth/2fa/disable` - Disable 2FA
+- Owner endpoints (owner role only):
+  - `GET /api/owner/users` - List all users
+  - `POST /api/owner/users/:id/role` - Change user role (staff/user)
+  - `POST /api/owner/users/:id/ban` - Ban user
+  - `POST /api/owner/users/:id/unban` - Unban user
+  - `GET /api/owner/staff` - List staff members
+  - `GET /api/owner/audit-logs` - View audit logs
+- Staff endpoints (staff/owner role):
+  - `GET /api/staff/codes` - List all codes (for moderation)
+  - `GET /api/staff/advertisements` - List all ads (for moderation)
+  - `POST /api/staff/codes/:id/approve` - Approve code
+  - `POST /api/staff/codes/:id/reject` - Reject code
+  - `DELETE /api/staff/codes/:id` - Delete code
+  - `POST /api/staff/advertisements/:id/approve` - Approve advertisement
+  - `POST /api/staff/advertisements/:id/reject` - Reject advertisement
+  - `DELETE /api/staff/advertisements/:id` - Delete advertisement
 
 **Data Validation**
 - Zod schema validation for all incoming data
@@ -114,11 +153,14 @@ Preferred communication style: Simple, everyday language.
 
 **Schema Design**
 - `codes` table with fields: id, title, code, description, category, status, isVerified, copyCount, submitterId, submitterName, submitterEmail, createdAt
-- `users` table with fields: id, email, firstName, lastName, profileImageUrl, bio, isAdmin, tags (array), createdAt, updatedAt
+- `users` table with fields: id, email, firstName, lastName, profileImageUrl, bio, isAdmin, tags (array), role (owner/staff/user), passwordHash, emailVerifiedAt, emailVerificationToken, emailVerificationTokenExpiresAt, twoFactorEnabled, twoFactorSecret, twoFactorBackupCodes, isBanned, bannedAt, bannedReason, createdAt, updatedAt
 - `advertisements` table with fields: id, title, description, category, inviteLink, imageUrl, status, isVerified, viewCount, submitterId, submitterName, submitterEmail, createdAt
 - `favorites` table for user saved codes
 - `ratings` table for code upvotes/downvotes
 - `reports` table for flagging problematic codes
+- `auditLogs` table for tracking moderation actions (action, actorId, targetId, targetType, details, createdAt)
+- `siteSettings` table for site-wide configuration (key, value, updatedAt, updatedBy)
+- User roles: owner (full access), staff (moderation), user (default)
 - User tags: admin, moderator, verified, vip, contributor, developer (with color coding)
 - Status values: "pending", "approved", "rejected"
 - Category validation against predefined category list (13 categories for codes, separate advertising categories)

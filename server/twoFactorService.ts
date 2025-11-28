@@ -1,9 +1,11 @@
 // Two-Factor Authentication service using TOTP
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
+import bcrypt from 'bcrypt';
 
 const APP_NAME = 'Alpha Source';
+const BCRYPT_ROUNDS = 10;
 
 export interface TwoFactorSetup {
   secret: string;
@@ -49,11 +51,16 @@ export function verifyTwoFactorToken(secret: string, token: string): boolean {
   }
 }
 
-export function verifyBackupCode(storedCodes: string, inputCode: string): { valid: boolean; remainingCodes: string } {
+function hashSingleCode(code: string): string {
+  const normalized = code.toUpperCase().replace(/[\s-]/g, '');
+  return createHash('sha256').update(normalized).digest('hex');
+}
+
+export async function verifyBackupCode(storedCodes: string, inputCode: string): Promise<{ valid: boolean; remainingCodes: string }> {
   const codes = storedCodes.split(',').filter(c => c.trim());
-  const normalizedInput = inputCode.toUpperCase().replace(/\s/g, '');
+  const inputHash = hashSingleCode(inputCode);
   
-  const index = codes.findIndex(c => c.replace(/\s/g, '') === normalizedInput);
+  const index = codes.findIndex(c => c === inputHash);
   
   if (index === -1) {
     return { valid: false, remainingCodes: storedCodes };
@@ -64,5 +71,5 @@ export function verifyBackupCode(storedCodes: string, inputCode: string): { vali
 }
 
 export function hashBackupCodes(codes: string[]): string {
-  return codes.join(',');
+  return codes.map(code => hashSingleCode(code)).join(',');
 }

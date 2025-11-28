@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [resending, setResending] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,14 +31,14 @@ export default function Signup() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+    if (formData.password.length < 8) {
+      toast({ title: "Error", description: "Password must be at least 8 characters", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/signup", {
+      const response: any = await apiRequest("POST", "/api/auth/signup", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -43,8 +46,10 @@ export default function Signup() {
       });
 
       if (response.success) {
-        toast({ title: "Success", description: "Account created! Logging you in..." });
-        setTimeout(() => setLocation("/"), 1500);
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        setUserEmail(formData.email);
+        setShowVerificationMessage(true);
+        toast({ title: "Success", description: "Account created! Please verify your email." });
       }
     } catch (error: any) {
       toast({ 
@@ -56,6 +61,71 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await apiRequest("POST", "/api/auth/resend-verification", {});
+      toast({ title: "Sent", description: "Verification email resent. Check your inbox." });
+    } catch (error: any) {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to resend email", 
+        variant: "destructive" 
+      });
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500/5 to-purple-600/5 p-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-pink-500/20 to-purple-600/20 mb-6">
+            <Mail className="h-10 w-10 text-pink-500" />
+          </div>
+          
+          <h1 className="text-2xl font-bold mb-2">Verify Your Email</h1>
+          <p className="text-muted-foreground mb-6">
+            We've sent a verification link to <span className="font-medium text-foreground">{userEmail}</span>
+          </p>
+
+          <div className="bg-muted/50 rounded-lg p-4 mb-6 text-left">
+            <h3 className="font-medium mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              Check your inbox
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Click the verification link in the email to complete your registration.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button 
+              onClick={() => setLocation("/")}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+              data-testid="button-continue-home"
+            >
+              Continue to Alpha Source
+            </Button>
+            
+            <div className="text-sm text-muted-foreground">
+              Didn't receive the email?{" "}
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="text-pink-500 hover:text-pink-600 font-medium disabled:opacity-50"
+                data-testid="button-resend-verification"
+              >
+                {resending ? "Sending..." : "Resend"}
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500/5 to-purple-600/5 p-4">
@@ -126,13 +196,13 @@ export default function Signup() {
               <Input
                 id="password"
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 className="pl-10"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 required
                 disabled={loading}
-                minLength={6}
+                minLength={8}
                 data-testid="input-signup-password"
               />
             </div>
@@ -151,7 +221,7 @@ export default function Signup() {
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 required
                 disabled={loading}
-                minLength={6}
+                minLength={8}
                 data-testid="input-signup-confirm-password"
               />
             </div>

@@ -246,7 +246,7 @@ export async function registerRoutes(
         let isValidCode = verifyTwoFactorToken(user.twoFactorSecret, twoFactorCode);
         
         if (!isValidCode && user.twoFactorBackupCodes) {
-          const { valid, remainingCodes } = verifyBackupCode(user.twoFactorBackupCodes, twoFactorCode);
+          const { valid, remainingCodes } = await verifyBackupCode(user.twoFactorBackupCodes, twoFactorCode);
           if (valid) {
             isValidCode = true;
             await storage.updateUser(user.id, { twoFactorBackupCodes: remainingCodes });
